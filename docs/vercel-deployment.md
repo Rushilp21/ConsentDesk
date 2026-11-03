@@ -7,10 +7,11 @@ The configured Upstox credential successfully returned an authenticated quote, a
 Deploy the static dashboard/chatbot to Vercel and keep the Python backend on an always-running host with a persistent disk. The current application uses local SQLite accounts/journals, background jobs, a daily scheduler and an ongoing broker connection. This release does not migrate those services into Vercel Functions or temporary storage.
 
 1. Deploy the backend with Docker and persistent `data/`, using the existing HTTPS/public-mode deployment guide. Configure Upstox credentials only on that backend. Verify data-display/recommendation permissions before public launch.
+   A managed-hosting Blueprint and exact setup steps are in [Render deployment](render-deployment.md).
 2. Generate the Vercel frontend using your actual HTTPS backend hostname:
 
    ```powershell
-   python scripts/prepare_vercel.py --backend https://YOUR-BACKEND-HOST
+   python scripts/prepare_vercel.py --backend https://YOUR-BACKEND-HOST --verify
    ```
 
 3. Deploy `deployment/vercel` on Vercel. Framework: Other. Build command: none. Output directory: `.`. For a Git import set Root Directory to `deployment/vercel` and commit that generated directory. `vercel.json` forwards `/api/*` to the backend; browser requests remain on the frontend origin.

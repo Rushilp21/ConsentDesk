@@ -131,6 +131,7 @@ ConsentDesk/
 |-- requirements.txt         # Runtime dependency
 |-- .env.example             # Credential-free configuration template
 |-- Dockerfile               # Backend container
+|-- render.yaml              # Paid persistent Render backend Blueprint
 |-- compose.yaml             # Local/persistent backend setup
 |-- compose.public.yaml      # Public HTTPS overlay
 `-- Caddyfile                # HTTPS reverse-proxy configuration
@@ -150,12 +151,17 @@ docker compose up -d --build
 
 For public HTTPS hosting, follow the [release and deployment guide](docs/release-and-deployment.md). Confirm market-data display rights and applicable requirements for public stock recommendations before enabling public mode. Registration, email recovery and large-scale operation require further operational planning; this release is intended for a small beta.
 
+For managed hosting, use the [Render setup guide](docs/render-deployment.md).
+The Blueprint configures Docker, health checks, the Vercel origin, 7 AM IST scans
+and persistent storage. It requires a paid service and a hosting account; pushing
+the file alone does not launch the backend.
+
 ### Vercel frontend
 
 The supplied deployment arrangement places the frontend on Vercel and keeps the Python backend on a separate persistent host:
 
 ```sh
-python scripts/prepare_vercel.py --backend https://YOUR-BACKEND-HOST
+python scripts/prepare_vercel.py --backend https://YOUR-BACKEND-HOST --verify
 ```
 
 Deploy the generated `deployment/vercel` directory. Set the backend's `PUBLIC_ORIGIN` to the exact frontend HTTPS origin. **The checked-in example points to `backend.example.invalid`; regenerate it before deployment.**
@@ -170,9 +176,10 @@ See [Vercel deployment instructions](docs/vercel-deployment.md).
 python -m unittest discover -s tests -v
 node tests/test_brief_ui.js
 node tests/test_desk_ui.js
+node tests/test_auth_ui.js
 ```
 
-The latest verified release passed **98 Python tests and both JavaScript suites**. Read-only Upstox checks also confirmed authenticated quotes, streaming packets, news, history and option-chain access. These checks verify software/data access, not profitable trading. Browser visual verification and cloud deployment/runtime checks remain incomplete; market-hours behaviour should be verified before relying on alerts.
+The latest verified release passed **100 Python tests and three JavaScript suites**. Read-only Upstox checks also confirmed authenticated quotes, streaming packets, news, history and option-chain access. These checks verify software/data access, not profitable trading. Browser visual verification and cloud deployment/runtime checks remain incomplete; market-hours behaviour should be verified before relying on alerts.
 
 Optional provider smoke check:
 

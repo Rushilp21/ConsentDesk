@@ -4,14 +4,25 @@ import json
 from pathlib import Path
 import shutil
 from urllib.parse import urlparse
+from urllib.request import urlopen
 
 ROOT=Path(__file__).resolve().parents[1]
 
 
-def prepare(backend,destination):
+def prepare(backend,destination,verify=False):
     url=urlparse(backend)
     if url.scheme!='https' or not url.hostname or url.username or url.password or url.query or url.fragment or url.path not in ('','/'):
         raise ValueError('Use the public HTTPS backend origin without credentials, query or path')
+    if verify:
+        # Check before changing any generated deployment files.
+        for endpoint,field,expected in [('health','status','ok'),('auth/me','public_mode',True)]:
+            try:
+                with urlopen(backend.rstrip('/')+'/api/'+endpoint,timeout=20) as response:
+                    payload=json.load(response)
+                if payload.get(field)!=expected:
+                    raise ValueError('Unexpected backend response')
+            except Exception as error:
+                raise ValueError('Backend verification failed for /api/'+endpoint+'. Confirm the service is running in public mode.') from error
     destination=Path(destination).resolve()
     if destination==ROOT or ROOT/'web'==destination:raise ValueError('Use a separate deployment directory')
     destination.mkdir(parents=True,exist_ok=True)
@@ -28,4 +39,5 @@ def prepare(backend,destination):
 
 if __name__=='__main__':
     parser=argparse.ArgumentParser();parser.add_argument('--backend',required=True);parser.add_argument('--destination',default=str(ROOT/'deployment/vercel'))
-    args=parser.parse_args();print(prepare(args.backend,args.destination))
+    parser.add_argument('--verify',action='store_true',help='Require a healthy public backend before changing deployment files')
+    args=parser.parse_args();print(prepare(args.backend,args.destination,args.verify))

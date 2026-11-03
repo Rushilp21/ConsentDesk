@@ -1,0 +1,43 @@
+# Paid deployment: review Render's estimate before creating the Blueprint.
+# One instance owns SQLite and the in-process scheduler. Do not add replicas.
+services:
+  - type: web
+    name: consentdesk-api
+    runtime: docker
+    plan: starter
+    region: singapore
+    branch: main
+    dockerfilePath: ./Dockerfile
+    dockerContext: .
+    autoDeployTrigger: commit
+    healthCheckPath: /api/health
+    disk:
+      name: consentdesk-data
+      mountPath: /app/data
+      sizeGB: 1
+    envVars:
+      - key: HOST
+        value: 0.0.0.0
+      - key: PORT
+        value: "10000"
+      - key: DATA_DIR
+        value: /app/data
+      - key: PUBLIC_MODE
+        value: "true"
+      - key: PUBLIC_ORIGIN
+        value: https://consent-desk-tan.vercel.app
+      - key: SECURE_COOKIES
+        value: "true"
+      - key: MARKET_BROKER
+        value: upstox
+      - key: MARKET_STREAM_ENABLED
+        value: "true"
+      - key: DAILY_SCAN_ENABLED
+        value: "true"
+      - key: DAILY_SCAN_TIME
+        value: "07:00"
+      - key: UPSTOX_ANALYTICS_TOKEN
+        sync: false
+      # Enter true only after confirming the existing public-data requirements.
+      - key: PUBLIC_DATA_APPROVED
+        sync: false

@@ -1,6 +1,15 @@
 let authUser=null,authPublic=false,authResolve=null;
+async function readAuthResponse(response){
+  let data;
+  try{data=await response.json();}catch{
+    throw new Error('Backend unavailable. Check the backend deployment and Vercel API connection, then retry.');
+  }
+  if(!response.ok)throw new Error(data.error||'Backend request failed ('+response.status+'). Retry shortly.');
+  return data;
+}
 async function ensureAuth(){
-  const r=await fetch('/api/auth/me');const d=await r.json();authPublic=d.public_mode;authUser=d.user;
+  const r=await fetch('/api/auth/me');const d=await readAuthResponse(r);authPublic=d.public_mode;authUser=d.user;
+  if(typeof authPublic!=='boolean')throw new Error('Backend setup incomplete. Check the Vercel API connection.');
   document.querySelector('#logout').hidden=!authPublic||!authUser;
   if(!authPublic||authUser)return;
   document.querySelector('#register-account').hidden=!d.registration_enabled;
@@ -13,7 +22,7 @@ document.querySelector('#auth-form').addEventListener('submit',async e=>{
   const status=document.querySelector('#auth-status');status.textContent='Signing in…';
   try{
     const response=await fetch(button.dataset.auth==='register'?'/api/auth/register':'/api/auth/login',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(Object.fromEntries(new FormData(form)))});
-    const data=await response.json();if(!response.ok)throw new Error(data.error||'Sign-in failed');
+    const data=await readAuthResponse(response);
     authUser=data.user;form.reset();document.querySelector('#auth-dialog').close();document.querySelector('#logout').hidden=false;
     document.querySelector('#workspace-label').textContent='Private account';authResolve?.();
   }catch(x){status.textContent=x.message;}finally{button.disabled=false;}
