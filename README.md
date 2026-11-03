@@ -1,0 +1,2 @@
+# ConsentDesk
+AI Trading Guide 
