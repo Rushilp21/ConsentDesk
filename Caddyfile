@@ -1,0 +1,13 @@
+{$DOMAIN} {
+    encode gzip zstd
+    header {
+        X-Content-Type-Options nosniff
+        Referrer-Policy same-origin
+        X-Frame-Options DENY
+        Content-Security-Policy "default-src 'self'; script-src 'self'; style-src 'self' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data:; connect-src 'self'; frame-ancestors 'none'; base-uri 'self'; form-action 'self'"
+    }
+    request_body {
+        max_size 16KB
+    }
+    reverse_proxy consentdesk:8000
+}

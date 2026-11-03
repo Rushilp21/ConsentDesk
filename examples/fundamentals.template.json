@@ -1,0 +1,12 @@
+{
+  "INFY": {
+    "as_of": "YYYY-MM-DD",
+    "source_url": "https://www.infosys.com/investors/",
+    "revenue_growth_pct": null,
+    "earnings_growth_pct": null,
+    "roe_pct": null,
+    "debt_to_equity": null,
+    "pe": null,
+    "operating_cash_flow": null
+  }
+}

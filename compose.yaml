@@ -1,0 +1,19 @@
+services:
+  consentdesk:
+    build: .
+    ports:
+      - "127.0.0.1:8000:8000"
+    env_file: .env
+    environment:
+      HOST: 0.0.0.0
+      DATA_DIR: /app/data
+      INSTRUMENTS_FILE: /app/data/instruments.json
+      FUNDAMENTALS_FILE: /app/data/fundamentals.json
+    volumes:
+      - ./data:/app/data
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/api/health',timeout=3)"]
+      interval: 30s
+      timeout: 5s
+      retries: 3

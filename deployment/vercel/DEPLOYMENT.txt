@@ -1,0 +1,1 @@
+Deploy this directory as Other/static, no build command, output directory dot. The HTTPS backend must run separately with persistent data. No broker secrets belong in Vercel frontend files.

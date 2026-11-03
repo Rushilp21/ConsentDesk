@@ -1,0 +1,67 @@
+<section id="desk-view" hidden>
+  <div class="dashboard-heading"><div><div class="eyebrow">MEASURE BEFORE YOU COMMIT</div><h1>Trading desk.</h1><p>Paper trades, risk budgets and live-data alerts.</p></div><button id="refresh-desk" class="outline-button">↻ Refresh desk</button></div>
+  <p id="desk-status" class="desk-status" role="status"></p>
+  <div id="desk-summary" class="desk-summary"></div>
+  <nav class="desk-tabs" aria-label="Trading desk sections"><button data-desk-tab="journal" class="active">Paper journal</button><button data-desk-tab="alerts">Alerts & events</button><button data-desk-tab="research">Research checks</button></nav>
+  <section id="desk-journal">
+    <details class="desk-box"><summary>Risk limits & cost assumptions</summary><form id="limits-form" class="desk-form">
+      <label>Starting paper capital (₹)<input name="capital" type="number" min="100" max="100000000" step="100" required></label>
+      <label>Risk per trade (%)<input name="risk_pct" type="number" min="0.1" max="2" step="0.1" required></label>
+      <label>Total open stop risk (%)<input name="max_open_risk_pct" type="number" min="0.1" max="10" step="0.1" required></label>
+      <label>Daily loss / risk budget (%)<input name="daily_loss_pct" type="number" min="0.1" max="10" step="0.1" required></label>
+      <label>Sector exposure cap (%)<input name="max_sector_pct" type="number" min="5" max="100" step="1" required></label>
+      <label>Estimated fees per side (bps)<input name="fee_bps" type="number" min="0" max="100" step="1" required></label>
+      <label>Slippage per side (bps)<input name="slippage_bps" type="number" min="0" max="200" step="1" required></label>
+      <div class="form-action"><button class="desk-primary" type="submit">Save limits</button></div>
+    </form><p class="desk-note">1 bps = 0.01%. Unknown sectors share one exposure cap. Starting capital locks after the first paper trade.</p></details>
+    <div class="desk-columns"><section class="desk-box"><h2>Plan a paper trade</h2><p class="desk-note">Cash stocks · Long positions · Manual simulated entry</p><form id="paper-form" class="desk-form">
+      <label>NSE stock symbol<input name="symbol" placeholder="INFY" maxlength="20" required></label>
+      <label>Holding period<select name="mode"><option value="intraday">Intraday</option><option value="longterm">Long term</option></select></label>
+      <label>Entry reference (₹)<input name="entry" type="number" min="0.01" step="0.01" required></label>
+      <label>Stop loss (₹)<input name="stop" type="number" min="0.01" step="0.01" required></label>
+      <label>Target (₹)<input name="target" type="number" min="0.01" step="0.01" required></label>
+      <label>Shares<input name="quantity" type="number" min="1" step="1" placeholder="Calculate for me"></label>
+      <label class="full-width">Journal note<input name="note" maxlength="500" placeholder="Reason for the trade"></label>
+      <input name="report_id" type="hidden"><div class="form-action"><button type="submit" class="outline-button">Calculate size & risk</button><button id="paper-record" type="button" class="desk-primary" disabled>Record paper entry</button></div>
+    </form><div id="paper-preview" aria-live="polite"></div></section><section class="desk-box"><h2>Open positions</h2><div id="paper-open"></div><div id="sector-exposure"></div></section></div>
+    <section class="desk-box"><div class="desk-section-heading"><h2>Closed paper trades</h2><button id="export-paper" class="outline-button">↓ Export CSV</button></div><div id="paper-closed"></div><p class="desk-note">Paper outcomes use assumed costs. Automatic exits sample fresh broker quotes; prices between checks may be missed.</p></section>
+    <details class="desk-box"><summary>Recommendation journal</summary><div id="idea-journal"></div><p class="desk-note">Ideas are archived before any paper entry. An untraded recommendation has no trade P&L.</p></details>
+  </section>
+  <section id="desk-alerts" hidden>
+    <div class="desk-columns"><section class="desk-box"><h2>Watch a price</h2><form id="alert-form" class="desk-form">
+      <label>Stock symbol<input name="symbol" maxlength="20" placeholder="INFY" required></label>
+      <label>Condition<select name="kind"><option value="above">Price at / above</option><option value="below">Price at / below</option><option value="setup">Confirm saved intraday setup</option></select></label>
+      <label>Price level (₹)<input name="level" type="number" min="0.01" step="0.01" required></label>
+      <label>Expires (IST)<input name="expires_at" type="datetime-local" required></label><input name="report_id" type="hidden">
+      <div class="form-action"><button class="desk-primary" type="submit">Add in-app alert</button></div>
+    </form><p class="desk-note">Setup alerts need a current watch/conditional card. They check opening range, volume, VWAP, spread and gaps. Alerts pause without fresh broker data.</p></section><section class="desk-box"><h2>Alerts</h2><div id="alert-list"></div><details><summary>Recent notifications</summary><div id="alert-notifications"></div></details></section></div>
+    <section class="desk-box"><div class="desk-section-heading"><h2>Event calendar · next 30 days</h2></div><div id="event-list"></div>
+      <details><summary>Add a sourced event</summary><form id="event-form" class="desk-form">
+        <label>Symbol / ALL<input name="symbol" value="ALL" maxlength="20" required></label><label>Event date (IST)<input name="date" type="date" required></label>
+        <label>Type<select name="kind"><option value="earnings">Earnings / results</option><option value="policy">Policy / RBI</option><option value="corporate">Corporate action</option><option value="expiry">Listed expiry</option><option value="market_closed">NSE market closure</option></select></label><label>Title<input name="title" maxlength="160" required></label>
+        <label class="full-width">Source URL<input name="source_url" type="url" placeholder="https://…" required></label><div class="form-action"><button class="desk-primary" type="submit">Save event</button></div>
+      </form></details>
+      <form id="event-sync-form" class="inline-desk-form"><label>Stock symbol<input name="symbol" placeholder="INFY" required maxlength="20"></label><button class="outline-button" type="submit">Fetch corporate actions</button></form>
+      <p class="desk-note">Corporate actions use Upstox read-only data when configured. Earnings/policy dates need a source; news flags never invent dates.</p>
+    </section>
+  </section>
+  <section id="desk-research" hidden>
+    <section class="desk-box"><h2>Test the chart model</h2><form id="validation-form" class="inline-desk-form">
+      <label>Symbol<input name="symbol" placeholder="INFY" value="INFY" maxlength="20" required></label>
+      <label>History<select name="mode"><option value="longterm">Daily / long term</option><option value="intraday">5-minute intraday</option></select></label>
+      <label>Round-trip cost (bps)<input name="cost_bps" type="number" min="0" max="1000" value="20" required></label><button class="desk-primary" type="submit">Run walk-forward test</button>
+    </form><p id="validation-progress" class="desk-status" role="status"></p><div id="validation-results"></div><p class="desk-note">Three chronological tests, purged boundaries and cost stress. Tests the price classifier, not news/OI or actual stop/target fills.</p></section>
+    <section class="desk-box"><h2>Financials & valuation</h2><form id="financial-fetch-form" class="inline-desk-form"><label>NSE symbol<input name="symbol" value="INFY" maxlength="20" required></label><button class="outline-button" type="submit">Fetch financial review</button></form><div id="financial-review"></div>
+      <details><summary>Enter source-linked financial metrics</summary><form id="financial-form" class="desk-form">
+        <label>Stock symbol<input name="symbol" maxlength="20" required placeholder="INFY"></label><label>Financial statement date<input name="as_of" type="date" required></label>
+        <label>Revenue growth (%)<input name="revenue_growth_pct" type="number" step="0.01" required></label><label>Earnings growth (%)<input name="earnings_growth_pct" type="number" step="0.01" required></label>
+        <label>ROE (%)<input name="roe_pct" type="number" step="0.01" required></label><label>Debt / equity<input name="debt_to_equity" type="number" min="0" step="0.001" required></label>
+        <label>Company P/E<input name="pe" type="number" min="0.01" step="0.01" required></label><label>Sector P/E (optional)<input name="sector_pe" type="number" min="0.01" step="0.01"></label>
+        <label>Operating cash flow (₹)<input name="operating_cash_flow" type="number" step="1" required></label><label>Source URL<input name="source_url" type="url" required placeholder="https://…"></label>
+        <div class="form-action"><button class="desk-primary" type="submit">Save financial metrics</button></div>
+      </form><p class="desk-note">Enter rupees, not crores, for cash flow. Manual statement dates must be within 180 days. Check the original filings.</p></details>
+    </section>
+    <section class="desk-box"><h2>Free live-data option</h2><p class="desk-note">Upstox Analytics Token: free, read-only, valid for one year. Supports quotes, history, options, financials and corporate actions. Credentials are configured on the server.</p><a href="https://upstox.com/developer/api-documentation/analytics-token/" target="_blank" rel="noopener noreferrer">Official setup and supported APIs ↗</a><p id="desk-data-provider" class="desk-note"></p></section>
+  </section>
+</section>
+<dialog id="paper-close-dialog" aria-labelledby="paper-close-title"><div class="desk-section-heading"><h2 id="paper-close-title">Close paper position</h2><button type="button" id="paper-close-dismiss" class="outline-button" aria-label="Dismiss paper exit">×</button></div><form id="paper-close-form" class="desk-form"><input name="id" type="hidden"><label>Manual exit reference (₹)<input name="price" type="number" min="0.01" step="0.01" required></label><label>Reason<input name="reason" value="Manual exit" maxlength="120" required></label><div class="form-action"><button type="submit" class="desk-primary">Record simulated exit</button></div></form><p class="desk-note">Configured costs are applied. This records a paper fill, not a broker transaction.</p></dialog>
