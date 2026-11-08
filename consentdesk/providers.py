@@ -345,10 +345,10 @@ class Providers:
         if not key:
             raise ProviderError('Upstox underlying instrument key missing')
         selected=expiry
+        contracts=CACHE.get_or_load(('upstox-option-contracts',key,str(now_ist().date())),3600,
+            lambda:self._broker('v2/option/contract?'+urlencode({'instrument_key':key})))
+        if not isinstance(contracts,list):raise ProviderError('Malformed listed option contracts')
         if not re.fullmatch(r'\d{4}-\d{2}-\d{2}',expiry):
-            contracts=CACHE.get_or_load(('upstox-option-contracts',key,str(now_ist().date())),3600,
-                lambda:self._broker('v2/option/contract?'+urlencode({'instrument_key':key})))
-            if not isinstance(contracts,list):raise ProviderError('Malformed listed option contracts')
             expiries=sorted({c['expiry'] for c in contracts if isinstance(c,dict) and isinstance(c.get('expiry'),str) and c['expiry']>=str(now_ist().date())})
             if expiry.endswith('_month'):
                 months=sorted({e[:7] for e in expiries});offset={'current_month':0,'next_month':1,'far_month':2}.get(expiry,99)
@@ -362,8 +362,18 @@ class Providers:
         data = CACHE.get_or_load(('options', symbol, selected), 20, lambda: self._broker(path))
         if not isinstance(data, list) or not data:
             raise ProviderError('No option chain for the selected underlying and expiry')
+        metadata={c.get('instrument_key'):c for c in contracts if isinstance(c,dict) and c.get('instrument_key') and c.get('expiry')==selected}
+        # Copy cached chain rows before adding reference metadata. Do not invent
+        # an exchange quote timestamp from the HTTP fetch time.
+        import copy
+        data=copy.deepcopy(data)
+        for row in data:
+            for field in ('call_options','put_options'):
+                option=row.get(field) or {};meta=metadata.get(option.get('instrument_key'),{})
+                lot=meta.get('lot_size')
+                if finite(lot) and lot>0 and int(lot)==lot:option['lot_size']=int(lot)
         return {'rows': data, 'source': 'Upstox option chain','expiry':selected, 'fetched_at': now_ist().isoformat(),
-                'note': 'Fetched snapshot; per-contract exchange timestamp and lot size are not supplied here. Confirm in broker before trading.'}
+                'note': 'Fetched chain snapshot; lot sizes matched by listed contract key when available. Per-contract exchange quote timestamps are unverified.'}
 
     def fundamentals(self, symbol):
         if hasattr(self,'desk'):

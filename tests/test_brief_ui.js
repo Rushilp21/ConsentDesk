@@ -77,6 +77,17 @@ async function run(){
   vm.runInContext("acceptBrief('intraday',energy,'energy')",context);
   assert.equal(element('#brief-intraday').innerHTML,sectorHTML,'A late response from another sector must not replace selected-sector cards');
   assert.equal(vm.runInContext('dailyBriefs.intraday.sector',context),'healthcare');
+  assert.match(html,/Planned hold/);assert.match(html,/12–36 months/);
+  context.fno={...context.stock,fno_views:{sell:{action:'BUY PUT (PE)',status:'WATCH ONLY',chart_basis:'5-minute',reasons:['Bearish trend'],score:4,checks_total:5,contract:{strike:100,side:'PUT',expiry:'2026-11-23',ask:10},lot_size:null,one_lot_cost:null,underlying_entry:95,underlying_stop:98,underlying_target:89,trigger:'Below',blocked_by:['Lot size unverified'],holding:{period:'Same session'},premium_risk:'Premium can be lost',expires_at:yesterday}}};
+  const put=vm.runInContext("fnoCard(fno,'sell')",context);
+  assert.match(put,/BUY PUT/);assert.match(put,/UNDERLYING BELOW/);
+  assert.match(put,/Lot size unverified/);assert.match(put,/PAST IDEA/);
+  assert.doesNotMatch(put,/data-paper-symbol/);
+  context.fnoReport={...context.next,mode:'options',fno_sections:{buy:[],sell:[context.fno]}};
+  const fnoHTML=vm.runInContext('briefHTML(fnoReport)',context);
+  assert.match(fnoHTML,/Buy \/ Bullish/);assert.match(fnoHTML,/Sell \/ Bearish/);
+  assert.match(fnoHTML,/No qualifying directional idea/);
+  assert.match(fnoHTML,/option writing is a different trade/);
   console.log('Passed: retain during refresh/error, replace after success, reject older responses, preserve critical stock context.');
 }
 run().catch(e=>{console.error(e);process.exitCode=1;});

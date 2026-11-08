@@ -1,5 +1,5 @@
 <section id="desk-view" hidden>
-  <div class="dashboard-heading"><div><div class="eyebrow">MEASURE BEFORE YOU COMMIT</div><h1>Trading desk.</h1><p>Paper trades, risk budgets and live-data alerts.</p></div><button id="refresh-desk" class="outline-button">↻ Refresh desk</button></div>
+  <div class="dashboard-heading"><div><h1>Trading desk</h1></div><button id="refresh-desk" class="outline-button">↻ Refresh desk</button></div>
   <p id="desk-status" class="desk-status" role="status"></p>
   <div id="desk-summary" class="desk-summary"></div>
   <nav class="desk-tabs" aria-label="Trading desk sections"><button data-desk-tab="journal" class="active">Paper journal</button><button data-desk-tab="alerts">Alerts & events</button><button data-desk-tab="research">Research checks</button></nav>
@@ -46,11 +46,11 @@
     </section>
   </section>
   <section id="desk-research" hidden>
-    <section class="desk-box"><h2>Test the chart model</h2><form id="validation-form" class="inline-desk-form">
+    <details class="desk-box"><summary>Advanced: historical model test</summary><p class="desk-note">Tests past chart data. It does not test option premiums or predict trade profits.</p><form id="validation-form" class="inline-desk-form">
       <label>Symbol<input name="symbol" placeholder="INFY" value="INFY" maxlength="20" required></label>
       <label>History<select name="mode"><option value="longterm">Daily / long term</option><option value="intraday">5-minute intraday</option></select></label>
       <label>Round-trip cost (bps)<input name="cost_bps" type="number" min="0" max="1000" value="20" required></label><button class="desk-primary" type="submit">Run walk-forward test</button>
-    </form><p id="validation-progress" class="desk-status" role="status"></p><div id="validation-results"></div><p class="desk-note">Three chronological tests, purged boundaries and cost stress. Tests the price classifier, not news/OI or actual stop/target fills.</p></section>
+    </form><p id="validation-progress" class="desk-status" role="status"></p><div id="validation-results"></div><p class="desk-note">Three chronological tests, purged boundaries and cost stress. Tests the price classifier, not news/OI or actual stop/target fills.</p></details>
     <section class="desk-box"><h2>Financials & valuation</h2><form id="financial-fetch-form" class="inline-desk-form"><label>NSE symbol<input name="symbol" value="INFY" maxlength="20" required></label><button class="outline-button" type="submit">Fetch financial review</button></form><div id="financial-review"></div>
       <details><summary>Enter source-linked financial metrics</summary><form id="financial-form" class="desk-form">
         <label>Stock symbol<input name="symbol" maxlength="20" required placeholder="INFY"></label><label>Financial statement date<input name="as_of" type="date" required></label>
@@ -61,7 +61,7 @@
         <div class="form-action"><button class="desk-primary" type="submit">Save financial metrics</button></div>
       </form><p class="desk-note">Enter rupees, not crores, for cash flow. Manual statement dates must be within 180 days. Check the original filings.</p></details>
     </section>
-    <section class="desk-box"><h2>Free live-data option</h2><p class="desk-note">Upstox Analytics Token: free, read-only, valid for one year. Supports quotes, history, options, financials and corporate actions. Credentials are configured on the server.</p><a href="https://upstox.com/developer/api-documentation/analytics-token/" target="_blank" rel="noopener noreferrer">Official setup and supported APIs ↗</a><p id="desk-data-provider" class="desk-note"></p></section>
+    <details class="desk-box"><summary>Data connection</summary><a href="https://upstox.com/developer/api-documentation/analytics-token/" target="_blank" rel="noopener noreferrer">Official setup and supported APIs ↗</a><p id="desk-data-provider" class="desk-note"></p></details>
   </section>
 </section>
 <dialog id="paper-close-dialog" aria-labelledby="paper-close-title"><div class="desk-section-heading"><h2 id="paper-close-title">Close paper position</h2><button type="button" id="paper-close-dismiss" class="outline-button" aria-label="Dismiss paper exit">×</button></div><form id="paper-close-form" class="desk-form"><input name="id" type="hidden"><label>Manual exit reference (₹)<input name="price" type="number" min="0.01" step="0.01" required></label><label>Reason<input name="reason" value="Manual exit" maxlength="120" required></label><div class="form-action"><button type="submit" class="desk-primary">Record simulated exit</button></div></form><p class="desk-note">Configured costs are applied. This records a paper fill, not a broker transaction.</p></dialog>

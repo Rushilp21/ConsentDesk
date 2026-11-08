@@ -10,6 +10,7 @@ from .patterns import chart_structure, oi_summary
 from .learning import PatternLearner
 from .sectors import metadata
 from .reasoning import analyse, rank_key
+from .trade_views import holding_plan, option_views
 
 def resolve_symbols(text):
     symbols = []
@@ -185,6 +186,9 @@ class ResearchAgent:
                 from .analysis import indicators as daily_indicators
                 if daily_indicators(daily,'longterm').get('trend')=='Bearish':
                     rec['status']='WAIT · DAILY TREND CONFLICT';rec['plan']={'status':'WAIT','blocked_by':['Daily trend conflicts with the intraday long setup.']}
+        for rec in recommendations:
+            rec['holding_plan']=holding_plan(rec,mode)
+            if mode=='options':rec['fno_views']=option_views(rec,market)
         recommendations.sort(key=rank_key)
         step('Evidence cross-check','Compared trend, momentum, volume, patterns, news catalysts and opposing evidence; missing facts remain missing')
         report['answer'] = self.fallback_answer(report, question)

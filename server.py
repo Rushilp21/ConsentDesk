@@ -224,10 +224,10 @@ class Application:
                     current = now_ist()
                     hour, minute = map(int,self.settings.daily_scan_time.split(':'))
                     if current.weekday()<5 and (hour,minute)<=(current.hour,current.minute):
-                        for mode in ('intraday','longterm'):
+                        for mode in ('intraday','longterm','options'):
                             self.daily(mode)
                         for sector in SECTORS:
-                            for mode in ('intraday','longterm'):
+                            for mode in ('intraday','longterm','options'):
                                 key=mode+':'+sector
                                 if time.monotonic()>=self.scan_retry.get(key,0):
                                     result=self.daily(mode,sector=sector)
@@ -417,7 +417,7 @@ def make_handler(app):
                     return self.reply(200,{'analysis':analyse_options(chain,market),'oi':oi_summary(chain)})
                 if url.path == '/api/daily':
                     mode=query.get('mode',['intraday'])[0]
-                    if mode not in ('intraday','longterm'):
+                    if mode not in ('intraday','longterm','options'):
                         raise ValueError('Invalid daily scan mode')
                     return self.reply(200, root.daily_snapshot(mode,sector_value(query.get('sector',['all'])[0])))
                 if url.path == '/api/history':
@@ -500,8 +500,8 @@ def make_handler(app):
                     job=self.app.validation(data)
                     return self.reply(202 if job else 429,{'job_id':job} if job else {'error':'Research is busy. Retry shortly.'})
                 if urlparse(self.path).path == '/api/daily':
-                    if not isinstance(data,dict) or data.get('mode','intraday') not in ('intraday','longterm'):
-                        raise ValueError('Select intraday or longterm scan')
+                    if not isinstance(data,dict) or data.get('mode','intraday') not in ('intraday','longterm','options'):
+                        raise ValueError('Select intraday, F&O or longterm scan')
                     return self.reply(202, root.daily(data.get('mode','intraday'), force=False if root.settings.public_mode else True,sector=sector_value(data.get('sector','all'))))
                 if urlparse(self.path).path != '/api/research':
                     return self.reply(404, {'error': 'Not found'})

@@ -14,3 +14,12 @@
 **External steps left:** generate/configure Upstox token; verify during market hours; provide hosting/domain; resolve public data-display and recommendation permissions before public release. Email verification/recovery and large-scale multi-instance operation are outside this beta. No public deployment performed.
 
 [Setup and deployment guide](release-and-deployment.md).
+
+## Family trading view — 4 November 2026
+
+- F&O added to dashboard and chatbot daily-brief tabs; sector filters apply to both bullish Call and bearish Put watchlists (up to three per side).
+- Separate bearish evidence checks; PCR alone never determines direction. Underlying trigger, stop and target labelled separately from option premiums.
+- Upstox listed-contract metadata supplies verified lot sizes and one-lot ask-premium cost; missing metadata remains missing. Contract quote timestamps are not fabricated.
+- Intraday/F&O same-session holding limit; long-term 12–36 month planning window and monthly/results reviews across sectors.
+- OI meanings shortened; duplicate evidence text removed. Historical model test collapsed under Advanced with baseline comparison and small-sample warning.
+- Options remain watchlists pending contract/strategy verification; futures trades and option writing are not implemented.

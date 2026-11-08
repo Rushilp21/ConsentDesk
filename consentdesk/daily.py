@@ -9,6 +9,8 @@ from .learning import completed_rows
 from .analysis import indicators
 from .sectors import SECTORS, sector_value
 from .reasoning import rank_key, analyse
+from .trade_views import holding_plan, option_views
+from .analysis import analyse_options
 
 BRIEF_VERSION=2
 EXTENDED=['BEL','HAL','BHEL','TATASTEEL','JSWSTEEL','VEDL','HINDALCO','TATAPOWER','NTPC','ONGC','COALINDIA','DIXON','PERSISTENT','COFORGE','TRENT','TITAN','MARUTI','M&M','EICHERMOT','BAJFINANCE','CIPLA','DRREDDY','APOLLOHOSP','INDIGO','IRCTC']
@@ -62,6 +64,7 @@ class DailyBrief:
     def __init__(self,agent,settings):self.agent=agent;self.providers=agent.providers;self.settings=settings
 
     def run(self,mode,progress=None,sector='all'):
+        if mode not in ('intraday','options','longterm'):raise ValueError('Unsupported daily mode')
         sector_value(sector)
         start=time.monotonic();now=now_ist();trace=[];gaps=[]
         def step(who,detail,status='done'):
@@ -79,6 +82,8 @@ class DailyBrief:
             discovery['symbols']=list(dict.fromkeys([*symbols,*(s for s,_ in members)]))[:12]
             discovery['names'].update(dict(members))
             discovery['note']=f'{label}: {len(discovery["symbols"])} explicitly classified stocks screened; bounded curated sector/theme universe, not all listed companies.'
+        if mode=='options' and sector=='all':
+            discovery['symbols']=list(dict.fromkeys(['NIFTY','BANKNIFTY',*discovery['symbols']]))[:self.settings.daily_candidate_limit]
         step('News discovery',discovery['note'],'limited' if gaps else 'done')
         try:
             benchmark=indicators(self.providers.candles('NIFTY','longterm'),'longterm',now)
@@ -90,7 +95,7 @@ class DailyBrief:
         before_open=(now.hour,now.minute)<(9,15);after_close=(now.hour,now.minute)>=(15,30)
         # Before 25 five-minute bars exist, retain a completed-daily watchlist.
         # Opening confirmation is performed separately by the live alert checks.
-        daily_basis=mode=='intraday' and ((now.hour,now.minute)<(11,20) or after_close or now.weekday()>=5)
+        daily_basis=mode in ('intraday','options') and ((now.hour,now.minute)<(11,20) or after_close or now.weekday()>=5)
         records=[];market={'verified':False,'open':False,'label':'Pre-open' if before_open else 'Session ended' if after_close else 'Session unverified'}
         for offset in range(0,len(discovery['symbols']),6):
             chunk=discovery['symbols'][offset:offset+6]
@@ -100,7 +105,7 @@ class DailyBrief:
         for rec in records:
             rec['name']=discovery['names'].get(rec['symbol'],rec['name'])
             rec['discovered_from_news']=bool(discovery['matches'].get(rec['symbol']))
-            if daily_basis:
+            if daily_basis and mode=='intraday':
                 try:levels=morning_levels(self.providers.candles(rec['symbol'],'longterm'),now)
                 except ProviderError:levels=None
                 rec['scenario']=levels;rec['plan']=None;rec['prediction']=None
@@ -132,12 +137,26 @@ class DailyBrief:
                 analyse(rec,mode,daily)
                 if daily_basis:rec['deep_analysis']['basis']='Pre-open/after-close review uses completed daily bars; intraday confirmation is still required.'
         records.sort(key=rank_key)
+        for rec in records:
+            rec['holding_plan']=holding_plan(rec,mode,now)
+            if mode=='options':
+                if not rec.get('option_analysis'):
+                    try:rec['option_analysis']=analyse_options(self.providers.options(rec['symbol'],'current_week'),market,now)
+                    except ProviderError:rec['option_analysis']={'contracts':[]}
+                rec['fno_views']=option_views(rec,market,daily_basis,now)
         selection=records[:3] if sector!='all' else records[:8]
+        fno_sections={}
+        if mode=='options':
+            for side,trend in [('buy','Bullish'),('sell','Bearish')]:
+                eligible=[r for r in records if r['metrics'].get('trend')==trend and r['fno_views'][side].get('contract')]
+                eligible.sort(key=lambda r:(-r['fno_views'][side]['score'],r['symbol']))
+                fno_sections[side]=eligible[:3]
+            selection=list({r['symbol']:r for items in fno_sections.values() for r in items}.values())
         if not any(r.get('metrics',{}).get('available') for r in records):
             raise ProviderError('No usable price history returned; previous completed sector brief retained')
         step('Morning brief',f'{len(records)} unique stocks screened; {len(selection)} shown')
         return {'brief_version':BRIEF_VERSION,'sector':sector,'sector_label':SECTORS[sector][0] if sector!='all' else 'All sectors','created_at':now_ist().isoformat(),'question':f"Today's {mode} recommendations · {sector}",'mode':mode,'symbols':[r['symbol'] for r in records],
-                'demo':False,'market':market,'recommendations':selection,'trace':trace,'duration_ms':round((time.monotonic()-start)*1000),
+                'demo':False,'market':market,'recommendations':selection,'fno_sections':fno_sections,'trace':trace,'duration_ms':round((time.monotonic()-start)*1000),
                 'capital':50000,'risk_pct':1,'engine':'News discovery + evidence screening','daily_scan':True,'discovery':{k:v for k,v in discovery.items() if k not in ('names','matches')},
                 'gaps':gaps,'market_context':market_context,'brief_timing':'PRE-OPEN' if before_open else 'AFTER CLOSE' if after_close else 'IN SESSION',
                 'answer':f"{len(records)} stocks screened. Shortlist uses news and chart evidence; opening confirmation is required for intraday ideas.",

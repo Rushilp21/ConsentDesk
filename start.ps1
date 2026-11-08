@@ -1,7 +1,10 @@
 $ErrorActionPreference = 'Stop'
 Set-Location -LiteralPath $PSScriptRoot
+$projectPython = Join-Path $PSScriptRoot '.venv/Scripts/python.exe'
 $taskPython = Get-Command python -ErrorAction SilentlyContinue
-if ($taskPython) {
+if (Test-Path -LiteralPath $projectPython) {
+    & $projectPython server.py
+} elseif ($taskPython) {
     & $taskPython.Source server.py
 } else {
     $bundledPython = Join-Path $env:USERPROFILE '.cache/codex-runtimes/codex-primary-runtime/dependencies/python/python.exe'

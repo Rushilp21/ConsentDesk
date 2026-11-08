@@ -170,7 +170,8 @@ def analyse_options(chain, market, now=None):
         except (ValueError, KeyError, TypeError):
             continue
     contracts.sort(key=lambda c: (c['spread_pct'], -c['volume']))
-    return {'status': 'CHAIN RESEARCH ONLY', 'contracts': contracts[:6], 'fetched_at': chain['fetched_at'],
+    selected = [c for side in ('CALL', 'PUT') for c in [v for v in contracts if v['side']==side][:3]]
+    return {'status': 'CHAIN RESEARCH ONLY', 'contracts': selected, 'fetched_at': chain['fetched_at'],
             'source': chain['source'], 'limitations': [chain['note'], 'Liquidity ranking is not a buy-call or buy-put signal. Theta, IV and expiry risk require strategy review.',
             'Revalidate instrument metadata, contract quote age, margin and strategy maximum loss; no option trade plan is generated.',
             'Market is verified open.' if market.get('verified') and market.get('open') else 'Market is not verified open; snapshot may reflect the last session.']}

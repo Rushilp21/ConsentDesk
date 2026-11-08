@@ -170,6 +170,10 @@ This is not a Vercel-only backend migration. Do not substitute temporary functio
 
 See [Vercel deployment instructions](docs/vercel-deployment.md).
 
+For zero-cost hosting options and their storage/scheduler limits, see
+[free backend hosting](docs/free-backend-hosting.md). The existing Render
+Blueprint uses a paid plan.
+
 ## Verification
 
 ```sh
@@ -179,7 +183,7 @@ node tests/test_desk_ui.js
 node tests/test_auth_ui.js
 ```
 
-The latest verified release passed **100 Python tests and three JavaScript suites**. Read-only Upstox checks also confirmed authenticated quotes, streaming packets, news, history and option-chain access. These checks verify software/data access, not profitable trading. Browser visual verification and cloud deployment/runtime checks remain incomplete; market-hours behaviour should be verified before relying on alerts.
+The latest verified release passed **109 Python tests and three JavaScript suites**. Read-only Upstox checks also confirmed authenticated quotes, streaming packets, news, history and option-chain access. These checks verify software/data access, not profitable trading. Browser visual verification and cloud deployment/runtime checks remain incomplete; market-hours behaviour should be verified before relying on alerts.
 
 Optional provider smoke check:
 
@@ -213,3 +217,9 @@ Keep backups private and test restoration. The host must remain running for the 
 - Paper fills use assumptions and sampled prices; they do not reproduce every real execution or gap.
 - Public access to a broker API does not itself grant permission to redistribute data.
 - No real-money orders are submitted. No daily-profit or 90% trading-reliability claim is made.
+
+## F&O and holding periods
+
+The daily mode selector includes F&O with separate bullish Buy Call (CE) and bearish Buy Put (PE) watchlists, up to three per side in the selected sector. Cards distinguish underlying triggers from premiums and show verified lot sizes and one-lot costs. Missing quote/strategy checks keep these as watchlists. Futures orders and option writing are not implemented.
+
+Long-term cards show a 12–36 month planning horizon, with monthly and quarterly-results reviews. The technical historical test is collapsed under Advanced. See the [short screen guide](docs/trading-screen-guide.md) for plain-language definitions and screenshot explanations.
