@@ -1,0 +1,10 @@
+.env
+.env.*
+.venv/
+data/
+backups/
+output/
+tmp/
+__pycache__/
+*.pyc
+deployment/vercel/

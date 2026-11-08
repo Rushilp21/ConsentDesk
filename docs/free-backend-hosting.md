@@ -1,5 +1,9 @@
 # Free backend hosting
 
+**Updated recommendation:** use the repository-root Vercel + Supabase mode in
+[serverless-deployment.md](serverless-deployment.md). The always-running-host
+comparison below applies to the legacy Docker deployment, not the new mode.
+
 ConsentDesk's current deployment keeps the static frontend on Vercel and runs
 Python separately. The backend needs persistent SQLite storage and a running
 process for its scheduler, research jobs and broker connection.

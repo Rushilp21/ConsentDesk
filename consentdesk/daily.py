@@ -3,6 +3,7 @@ from datetime import datetime
 import math
 import re
 import time
+import copy
 from .config import UNIVERSE
 from .providers import now_ist, IST, ProviderError
 from .learning import completed_rows
@@ -63,7 +64,7 @@ def morning_levels(bundle,now=None):
 class DailyBrief:
     def __init__(self,agent,settings):self.agent=agent;self.providers=agent.providers;self.settings=settings
 
-    def run(self,mode,progress=None,sector='all'):
+    def run(self,mode,progress=None,sector='all',discovery_override=None,candidate_symbols=None):
         if mode not in ('intraday','options','longterm'):raise ValueError('Unsupported daily mode')
         sector_value(sector)
         start=time.monotonic();now=now_ist();trace=[];gaps=[]
@@ -71,19 +72,24 @@ class DailyBrief:
             event={'agent':who,'detail':detail,'status':status,'elapsed_ms':round((time.monotonic()-start)*1000)}
             trace.append(event)
             if progress:progress(event)
-        try:instruments=self.providers.kite.instruments()
-        except (ProviderError,OSError):instruments=[];gaps.append('NSE catalogue unavailable; discovery limited to known symbols.')
-        try:articles=self.providers.market_news()
-        except ProviderError:articles=[];gaps.append('Market news discovery unavailable; using a broader fallback universe.')
-        discovery=discover(instruments,articles,self.settings.daily_symbols,self.settings.daily_candidate_limit)
-        if sector!='all':
-            label,members=SECTORS[sector];membership={s for s,_ in members}
-            symbols=[s for s in discovery['symbols'] if s in membership]
-            discovery['symbols']=list(dict.fromkeys([*symbols,*(s for s,_ in members)]))[:12]
-            discovery['names'].update(dict(members))
-            discovery['note']=f'{label}: {len(discovery["symbols"])} explicitly classified stocks screened; bounded curated sector/theme universe, not all listed companies.'
-        if mode=='options' and sector=='all':
-            discovery['symbols']=list(dict.fromkeys(['NIFTY','BANKNIFTY',*discovery['symbols']]))[:self.settings.daily_candidate_limit]
+        if discovery_override is None:
+            try:instruments=self.providers.kite.instruments()
+            except (ProviderError,OSError):instruments=[];gaps.append('NSE catalogue unavailable; discovery limited to known symbols.')
+            try:articles=self.providers.market_news()
+            except ProviderError:articles=[];gaps.append('Market news discovery unavailable; using a broader fallback universe.')
+            discovery=discover(instruments,articles,self.settings.daily_symbols,self.settings.daily_candidate_limit)
+            if sector!='all':
+                label,members=SECTORS[sector];membership={s for s,_ in members}
+                symbols=[s for s in discovery['symbols'] if s in membership]
+                discovery['symbols']=list(dict.fromkeys([*symbols,*(s for s,_ in members)]))[:12]
+                discovery['names'].update(dict(members))
+                discovery['note']=f'{label}: {len(discovery["symbols"])} explicitly classified stocks screened; bounded curated sector/theme universe, not all listed companies.'
+            if mode=='options' and sector=='all':
+                discovery['symbols']=list(dict.fromkeys(['NIFTY','BANKNIFTY',*discovery['symbols']]))[:self.settings.daily_candidate_limit]
+        else:
+            discovery=copy.deepcopy(discovery_override)
+        if candidate_symbols is not None:
+            discovery['symbols']=[s for s in candidate_symbols if s in discovery['symbols']]
         step('News discovery',discovery['note'],'limited' if gaps else 'done')
         try:
             benchmark=indicators(self.providers.candles('NIFTY','longterm'),'longterm',now)

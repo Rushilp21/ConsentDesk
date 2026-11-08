@@ -1,5 +1,8 @@
 # Working release and Vercel deployment
 
+**Legacy separate-host guide.** For the new single-URL Vercel + Supabase
+deployment, use [serverless-deployment.md](serverless-deployment.md).
+
 The configured Upstox credential successfully returned an authenticated quote, a connected WebSocket with packets, 270 daily candles, news and a 122-row Nifty option chain during read-only verification on 3 November 2026. Market status was CLOSING_END; live-session alert behaviour still needs a market-hours check. No credential is included in release artifacts. The optional language-model key/model remain unconfigured; deterministic research and the chart learner work without them.
 
 ## Deployment arrangement

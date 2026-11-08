@@ -10,6 +10,7 @@ import sqlite3
 import threading
 import time
 from contextlib import contextmanager
+from .database import connect
 
 
 class Accounts:
@@ -22,10 +23,7 @@ class Accounts:
 
     @contextmanager
     def db(self):
-        db=sqlite3.connect(self.path,timeout=15)
-        try:
-            with db:yield db
-        finally:db.close()
+        with connect(self.path) as db:yield db
 
     @staticmethod
     def password_hash(password,salt):
@@ -63,6 +61,11 @@ class Accounts:
         with self.db() as db:db.execute('DELETE FROM sessions WHERE token=?',(hashlib.sha256(token.encode()).hexdigest(),))
 
     def allow(self,key,limit,seconds=60):
+        if __import__('os').getenv('DATABASE_URL'):
+            # A database-backed fixed window survives cold starts and enforces
+            # limits across instances. No raw client address is stored.
+            digest=hashlib.sha256(repr(key).encode()).hexdigest()
+            return self.spend('rate:'+digest,'window:'+str(seconds),limit,str(int(time.time()//seconds)))
         with self.lock:
             now=time.monotonic()
             if len(self.attempts)>10000:self.attempts={k:q for k,q in self.attempts.items() if q and now-q[-1]<3600}
@@ -77,5 +80,7 @@ class Accounts:
             row=db.execute('SELECT count FROM usage WHERE user_id=? AND day=? AND kind=?',(user_id,day,kind)).fetchone()
             count=row[0] if row else 0
             if count>=limit:return False
-            db.execute('INSERT INTO usage VALUES(?,?,?,1) ON CONFLICT(user_id,day,kind) DO UPDATE SET count=count+1',(user_id,day,kind))
+            db.execute('INSERT INTO usage VALUES(?,?,?,1) ON CONFLICT(user_id,day,kind) DO UPDATE SET count=usage.count+1',(user_id,day,kind))
+            if user_id.startswith('rate:'):
+                db.execute("DELETE FROM usage WHERE user_id LIKE 'rate:%' AND kind=? AND day<?",(kind,str(int(day)-2)))
         return True

@@ -1,0 +1,12 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "buildCommand": "python scripts/prepare_serverless.py",
+  "outputDirectory": "public",
+  "functions": {
+    "api/index.py": {"maxDuration": 300}
+  },
+  "rewrites": [
+    {"source": "/api/:path*", "destination": "/api/index?__path=/api/:path*"}
+  ],
+  "crons": [{"path": "/api/cron", "schedule": "30 1 * * 1-5"}]
+}

@@ -1,5 +1,7 @@
 .env
 .git
+.venv
+public
 data
 tmp
 output

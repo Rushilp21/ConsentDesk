@@ -3,6 +3,7 @@ import sqlite3
 import uuid
 from contextlib import contextmanager
 from .providers import now_ist
+from .database import connect
 
 class Store:
     def __init__(self, data_dir):
@@ -30,12 +31,7 @@ class Store:
 
     @contextmanager
     def connect(self):
-        connection = sqlite3.connect(self.path, timeout=15)
-        try:
-            with connection:
-                yield connection
-        finally:
-            connection.close()
+        with connect(self.path) as connection:yield connection
 
     def save(self, session, profile, question, report, on_saved=None):
         report['id'] = uuid.uuid4().hex
@@ -61,7 +57,7 @@ class Store:
     def unify_workspace(self):
         # Preserve every old report while merging the previous preference profiles.
         with self.connect() as db:
-            db.execute("UPDATE reports SET session='common-workspace', profile='common'")
+            db.execute("UPDATE reports SET session='common-workspace', profile='common' WHERE session<>'common-workspace' OR profile<>'common'")
 
     def daily_report(self, mode, day=None, brief_version=None,sector='all'):
         # A saved brief must survive any number of ordinary chatbot reports.

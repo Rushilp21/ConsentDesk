@@ -86,8 +86,9 @@ class Application:
         self.providers = self.agent.providers
         self.desk = TradingDesk(self.store)
         self.providers.desk = self.desk
-        for report in reversed(self.store.history('common-workspace','common',20)):
-            self.desk.save_ideas(report)
+        if not getattr(self.settings,'serverless',False):
+            for report in reversed(self.store.history('common-workspace','common',20)):
+                self.desk.save_ideas(report)
         self.jobs = self.store.load_jobs()
         self.lock = threading.Lock()
         self.slots = threading.BoundedSemaphore(3)
@@ -113,7 +114,7 @@ class Application:
         with self.workspace_lock:
             if user_id not in self.workspaces:
                 settings=copy.copy(self.settings);settings.data_dir=self.settings.data_dir/'users'/user_id
-                self.workspaces[user_id]=Application(settings,parent=self)
+                self.workspaces[user_id]=type(self)(settings,parent=self)
             return self.workspaces[user_id]
 
     def import_shared_report(self,workspace,report_id):

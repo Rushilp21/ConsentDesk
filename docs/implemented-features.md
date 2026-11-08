@@ -23,3 +23,13 @@
 - Intraday/F&O same-session holding limit; long-term 12–36 month planning window and monthly/results reviews across sectors.
 - OI meanings shortened; duplicate evidence text removed. Historical model test collapsed under Advanced with baseline comparison and small-sample warning.
 - Options remain watchlists pending contract/strategy verification; futures trades and option writing are not implemented.
+
+## Vercel + Supabase migration
+
+- Same-origin Flask API Function and static UI build from the repository root.
+- Private PostgreSQL schemas for accounts and each workspace; local SQLite remains available.
+- Durable leased jobs checkpoint one stock per request, recover expired leases, and save results idempotently.
+- Broker snapshots poll every 15 seconds; hosted mode starts no permanent broker stream or daemon monitor.
+- Authenticated Supabase Cron worker queues weekday briefs after 07:00 IST and finishes pending personal research.
+- Private environment/scheduler setup files generated locally; full manual setup steps in serverless-deployment.md.
+- Verified against SQLite and a temporary TLS PostgreSQL instance. Actual cloud deployment remains pending environment configuration.
