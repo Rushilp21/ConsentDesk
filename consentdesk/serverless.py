@@ -76,17 +76,43 @@ class ServerlessApplication(Application):
         return {'status':'ok','advanced':len(pending),'checked_at':now.isoformat()}
 
 
+class SetupError(ValueError):
+    def __init__(self,code,message):
+        super().__init__(message)
+        self.code=code
+
+
+def startup_failure(error):
+    """Return fixed diagnostics only; exception messages may contain credentials."""
+    if isinstance(error,SetupError):return error.code,str(error)
+    sqlstate=getattr(error,'sqlstate',None) or ''
+    message=str(error).lower()
+    if sqlstate.startswith('28') or 'password authentication failed' in message:
+        return 'DATABASE_AUTH_FAILED','Supabase rejected the database login. Check DATABASE_URL in Vercel Production.'
+    if 'tenant or user not found' in message:
+        return 'DATABASE_PROJECT_INVALID','Check the project username and pooler host in DATABASE_URL.'
+    if any(term in message for term in ('resolve host','translate host','getaddrinfo')):
+        return 'DATABASE_HOST_INVALID','Cannot resolve the database host. Copy the complete pooler URL and URL-encode the password.'
+    if sqlstate=='42501':return 'DATABASE_PERMISSION_DENIED','The database user cannot initialise the application tables.'
+    if sqlstate.startswith('08') or type(error).__name__=='OperationalError':
+        return 'DATABASE_CONNECTION_FAILED','Cannot connect to Supabase. Check the pooler URL and whether the project is active.'
+    if isinstance(error,OSError):return 'DATA_DIRECTORY_FAILED','Set DATA_DIR to /tmp/consentdesk in Vercel Production.'
+    return 'BACKEND_STARTUP_FAILED','Backend initialisation failed. Check the startup error code in Vercel Runtime Logs.'
+
+
 def create_app(settings=None,require_database=True):
     web=Flask(__name__);web.config['MAX_CONTENT_LENGTH']=16000
     guard=threading.Lock();state={}
     def root_app():
         with guard:
             if 'root' not in state:
-                if require_database and not os.getenv('DATABASE_URL'):raise ValueError('Set DATABASE_URL in Vercel Environment Variables')
+                if require_database and not os.getenv('DATABASE_URL','').strip():
+                    raise SetupError('DATABASE_URL_MISSING','Set DATABASE_URL in Vercel Production and redeploy.')
                 config=copy.copy(settings) if settings else Settings()
                 config.public_mode=True;config.secure_cookies=True;config.stream_enabled=False
                 config.serverless=True
-                if not config.public_data_approved:raise ValueError('Complete PUBLIC_DATA_APPROVED deployment setup')
+                if not config.public_data_approved:
+                    raise SetupError('PUBLIC_DATA_NOT_APPROVED','PUBLIC_DATA_APPROVED is not true in this deployment. Complete the public-data setup and redeploy.')
                 state['root']=ServerlessApplication(config)
             return state['root']
 
@@ -96,9 +122,11 @@ def create_app(settings=None,require_database=True):
         path=request.args.get('__path') or request.path
         if not path.startswith('/api/'):return Response('Not found',status=404)
         try:root=root_app()
-        except Exception:
+        except Exception as error:
             # Never return a driver DSN/password or provider credential in setup errors.
-            return {'error':'Backend setup incomplete. Check DATABASE_URL and public deployment settings in Vercel.'},503
+            code,message=startup_failure(error)
+            web.logger.error('Backend startup failed: code=%s type=%s sqlstate=%s',code,type(error).__name__,getattr(error,'sqlstate',None))
+            return {'error':message,'code':code},503
         if path=='/api/cron':
             secret=os.getenv('CRON_SECRET','')
             if len(secret)<32 or not hmac.compare_digest(request.headers.get('Authorization',''),'Bearer '+secret):return {'error':'Unauthorized'},401

@@ -12,7 +12,7 @@ import uuid
 from consentdesk.config import Settings
 from consentdesk.storage import Store
 from consentdesk.durable import DurableQueue
-from consentdesk.serverless import create_app, ServerlessApplication
+from consentdesk.serverless import create_app, ServerlessApplication, startup_failure
 from consentdesk.database import namespace, postgres_sql
 from test_research import temporary_directory
 
@@ -118,6 +118,24 @@ class ServerlessTests(unittest.TestCase):
             result=client.get('/api/auth/me')
             self.assertEqual(result.status_code,503)
             self.assertIn('DATABASE_URL',result.json['error'])
+            self.assertEqual(result.json['code'],'DATABASE_URL_MISSING')
+
+    def test_startup_diagnostics_do_not_leak_connection_secrets(self):
+        secret='postgresql://private-user:private-password@private-host/postgres'
+        cases=[(ValueError(secret),'BACKEND_STARTUP_FAILED'),
+               (RuntimeError('password authentication failed '+secret),'DATABASE_AUTH_FAILED'),
+               (RuntimeError('failed to resolve host '+secret),'DATABASE_HOST_INVALID'),
+               (OSError('read-only filesystem '+secret),'DATA_DIRECTORY_FAILED')]
+        for error,expected in cases:
+            code,message=startup_failure(error)
+            self.assertEqual(code,expected)
+            self.assertNotIn(secret,message)
+        settings=Settings();settings.public_data_approved=False
+        with patch.dict(os.environ,{'DATABASE_URL':secret}):
+            with self.assertLogs('consentdesk.serverless',level='ERROR') as logs:
+                result=create_app(settings).test_client().get('/api/health')
+            self.assertEqual(result.json['code'],'PUBLIC_DATA_NOT_APPROVED')
+            self.assertNotIn(secret,str(result.json)+str(logs.output))
 
     def test_rewritten_vercel_path_reaches_the_api(self):
         with temporary_directory() as tmp:
